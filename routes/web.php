@@ -10,6 +10,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('users/trashed', [UserController::class, 'trashed'])->name('users.trashed');
     Route::put('users/{id}/restore', [UserController::class, 'restore'])->name('users.restore');
     Route::delete('users/{id}/forceDelete', [UserController::class, 'forceDelete'])->name('users.forceDelete');
+    Route::get('/users', [UserController::class, 'index'])->name('users.index');
     Route::resource('users', UserController::class);
 });
 
