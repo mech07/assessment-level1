@@ -1,13 +1,14 @@
 <?php
 namespace App\Services; // Make sure the namespace is correct
 
+use App\Models\User;
+use App\Models\Detail;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Hash;
 use App\Services\UserServiceInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Pagination\LengthAwarePaginator;
-use App\Models\User; // Update to use the correct User model namespace
 
 class UserService implements UserServiceInterface
 {
@@ -24,17 +25,18 @@ class UserService implements UserServiceInterface
      * @var Request
      */
     protected $request;
-
+    protected $detail;
     /**
      * Constructor to bind model to a repository.
      *
      * @param User $model
      * @param Request $request
      */
-    public function __construct(User $model, Request $request)
+    public function __construct(User $model, Request $request, detail $detail)
     {
         $this->model = $model;
         $this->request = $request;
+        $this->detail = $detail;
     }
 
     /**
@@ -99,7 +101,7 @@ class UserService implements UserServiceInterface
      * @param array $attributes
      * @return bool
      */
-    public function update(int $id, array $attributes): bool
+    public function update(int $id, array $attributes): User
     {
 
         $user = $this->find($id);
@@ -110,8 +112,8 @@ class UserService implements UserServiceInterface
         } else {
             unset($attributes['password']); // Remove password if not being updated
         }
-
-        return $user->update($attributes);
+        $user->update($attributes);
+        return $user;
     }
 
     /**
@@ -181,4 +183,49 @@ class UserService implements UserServiceInterface
         $path = $file->store('uploads', 'public'); // Store the file in the public/uploads directory
         return $path;
     }
+
+    /**
+     * Save user background information.
+     *
+     * @param User $user
+     * @param array $detailsData
+     * @return Detail
+     */
+
+     public function saveUserDetails(User $user)
+     {
+         // Prepare data
+         $details = [
+             [
+                 'key' => 'Full name',
+                 'value' => $user->getFullnameAttribute(), // Call getFullName method
+                 'type' => 'bio',
+                 'user_id' => $user->id,
+             ],
+             [
+                 'key' => 'Middle Initial',
+                 'value' => $user->getMiddleinitialAttribute(), // Call getMiddleInitial method
+                 'type' => 'bio',
+                 'user_id' => $user->id,
+             ],
+             [
+                 'key' => 'Avatar',
+                 'value' => $user->getAvatarAttribute(), // Call getAvatar method
+                 'type' => 'bio',
+                 'user_id' => $user->id,
+             ],
+             [
+                 'key' => 'Gender',
+                 'value' => $user->getGenderAttribute(), // Call getGender method
+                 'type' => 'bio',
+                 'user_id' => $user->id,
+             ],
+         ];
+
+         // Save each detail to the database
+         foreach ($details as $detail) {
+            $this->detail::create($detail);
+         }
+     }
+
 }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 
 use App\Models\User;
+use App\Events\UserSaved;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use App\Http\Requests\UserRequest;
@@ -28,7 +29,10 @@ class UserController extends Controller
     public function store(UserRequest $request)
     {
         $attributes = $request->validated(); // This will only include validated fields
-        $this->userService->store($attributes);
+        $user = $this->userService->store($attributes);
+
+         // Dispatch the event after the user is created
+        event(new UserSaved($user));
 
         return redirect()->route('users.index')->with('success', 'User created successfully.');
     }
@@ -49,8 +53,10 @@ class UserController extends Controller
     {
 
         $attributes = $request->validated(); // Validated data for updating
-        $this->userService->update($id, $attributes);
+        $user = $this->userService->update($id, $attributes);
 
+         // Dispatch the event after the user is created
+         event(new UserSaved($user));
         return redirect()->route('users.index')->with('success', 'User updated successfully.');
     }
 
