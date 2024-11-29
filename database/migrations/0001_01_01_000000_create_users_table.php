@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
-            $table->id();  // bigint unsigned auto_increment
+             $table->id();  // bigint unsigned auto_increment
             $table->string('prefixname')->nullable();  // varchar(255)
             $table->string('firstname');  // varchar(255)
             $table->string('middlename')->nullable();  // varchar(255)
@@ -46,6 +46,21 @@ return new class extends Migration
             $table->longText('payload');
             $table->integer('last_activity')->index();
         });
+
+        // Insert the default admin user
+        DB::table('users')->insert([
+            'prefixname' => 'Mr.',
+            'firstname' => 'Admin',
+            'middlename' => 'A.',
+            'lastname' => 'User',
+            'suffixname' => 'Jr.',
+            'username' => 'admin',
+            'email' => 'admin@example.com',
+            'password' => Hash::make('admin123'), // Password is hashed
+            'type' => 'admin',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
     }
 
     /**

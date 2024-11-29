@@ -82,4 +82,18 @@ class User extends Authenticatable
         // Return the first character of the middle name, or null if middlename is not set
         return $middleName ? strtoupper($middleName[0]) : null;
     }
+
+    public function getGenderAttribute()
+    {
+        return match ($this->prefixname) {
+            'Mr' => 'male',
+            'Ms', 'Mrs' => 'female',
+            default => 'unknown',
+        };
+    }
+
+    public function details(): HasMany
+    {
+        return $this->hasMany(Detail::class);
+    }
 }

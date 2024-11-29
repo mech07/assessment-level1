@@ -4,49 +4,42 @@ namespace App\Http\Controllers;
 
 
 use App\Models\User;
+use App\Events\UserSaved;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use App\Http\Requests\UserRequest;
 use Illuminate\Support\Facades\Hash;
+use App\Services\UserServiceInterface;
 
 class UserController extends Controller
 {
+
+    protected $userService;
+
+    public function __construct(UserServiceInterface $userService)
+    {
+        $this->userService = $userService;
+    }
 
     public function create()
     {
         return view('users.create');
     }
 
-    public function store(Request $request)
+    public function store(UserRequest $request)
     {
+        $attributes = $request->validated(); // This will only include validated fields
+        $user = $this->userService->store($attributes);
 
-        $request->validate([
-            'firstname' => 'required',
-            'lastname' => 'required',
-            'username' => 'required|unique:users',
-            'email' => 'required|email|unique:users',
-            'password' => 'required|min:8',
-        ]);
-
-
-
-        User::create([
-            'prefixname' => $request->prefixname,
-            'firstname' => $request->firstname,
-            'middlename' => $request->middlename,
-            'lastname' => $request->lastname,
-            'suffixname' => $request->suffixname,
-            'username' => $request->username,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'type' => $request->type,
-        ]);
+         // Dispatch the event after the user is created
+        event(new UserSaved($user));
 
         return redirect()->route('users.index')->with('success', 'User created successfully.');
     }
 
     public function index()
     {
-        $users = User::all();
+        $users = $this->userService->list();
         return view('users.index', compact('users'));
     }
 
@@ -56,75 +49,46 @@ class UserController extends Controller
         return view('users.edit', compact('user'));
     }
 
-    public function update(Request $request, $id)
+    public function update(UserRequest $request, $id)
     {
 
-        $request->validate([
-            'firstname' => 'required',
-            'lastname' => 'required',
-            'username' => 'required|unique:users,username,' . $id,
-            'email' => 'required|email|unique:users,email,' . $id,
-            'password' => 'nullable|min:8', // Password is optional, but if provided, it should have a minimum length
-            'prefixname' => 'nullable',
-            'middlename' => 'nullable',
-            'suffixname' => 'nullable',
-            'type' => 'nullable',
-        ]);
+        $attributes = $request->validated(); // Validated data for updating
+        $user = $this->userService->update($id, $attributes);
 
-        $user = User::findOrFail($id);
-
-        // Update user data
-        $user->prefixname = $request->prefixname;
-        $user->firstname = $request->firstname;
-        $user->middlename = $request->middlename;
-        $user->lastname = $request->lastname;
-        $user->suffixname = $request->suffixname;
-        $user->username = $request->username;
-        $user->email = $request->email;
-
-        // Update password only if provided
-        if ($request->filled('password')) {
-            $user->password = Hash::make($request->password);
-        }
-
-        $user->type = $request->type;
-        $user->save();
-
+         // Dispatch the event after the user is created
+         event(new UserSaved($user));
         return redirect()->route('users.index')->with('success', 'User updated successfully.');
     }
 
     public function show($id)
     {
-        $user = User::findOrFail($id);
+        $user = $this->userService->find($id);
         return view('users.show', compact('user'));
     }
 
     public function destroy($id)
     {
-        $user = User::findOrFail($id);
-        $user->delete();
+        $this->userService->destroy($id); // Soft delete
 
         return redirect()->route('users.index')->with('success', 'User deleted successfully.');
     }
 
     public function trashed()
     {
-        $trashedUsers = User::onlyTrashed()->get();
+        $trashedUsers = $this->userService->listTrashed();
         return view('users.trashed', compact('trashedUsers'));
     }
 
     public function restore($id)
     {
-        $user = User::withTrashed()->findOrFail($id);
-        $user->restore();
+        $this->userService->restore($id);
         return redirect()->route('users.index')->with('success', 'User restored successfully.');
     }
 
     public function forceDelete($id)
     {
-        $user = User::withTrashed()->findOrFail($id);
-        $user->forceDelete();
-        return redirect()->route('users.index')->with('success', 'User permanently deleted.');
+        $this->userService->delete($id); // Permanently delete the user
+        return redirect()->route('users.trashed')->with('success', 'User permanently deleted.');
     }
 
 
